@@ -154,6 +154,6 @@ void opcontrol() {
         hanger.control(buttonDown);
         intake_raiser.control(buttonB);
         // Delay to save resources
-        pros::delay(10);
+        pros::delay(20); // is it supposed to be longger?
     }
 }

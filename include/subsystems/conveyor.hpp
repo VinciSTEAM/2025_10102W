@@ -1,7 +1,9 @@
 #pragma once
 
+#include "pros/optical.hpp"
 #include "lemlib/timer.hpp"
 #include "spinner.hpp"
+#include "subsystem.hpp"
 #include <cmath>
 
 namespace ConveyorNamespace {
@@ -10,7 +12,7 @@ enum class State { STOP, FORWARDS, REVERSE, INTAKE_FORWARD };
 
 enum Color { RED = 0, BLUE = 1 };
 
-class Conveyor : public subsystem<ConveyorNamespace::State> {
+class Conveyor : public subsystem<State, Conveyor> {
     public:
         Conveyor(SpinnerNamespace::Spinner* intake, SpinnerNamespace::Spinner* hooks,
                  std::shared_ptr<pros::Optical> optical_sensor, std::shared_ptr<pros::Distance> distance)
@@ -73,8 +75,9 @@ class Conveyor : public subsystem<ConveyorNamespace::State> {
         void moveConveyor(SpinnerNamespace::State state) {
             if (reverse_ and distance_ != nullptr and distance_->get_distance() < DIST_THRESHOLD and
                 state == SpinnerNamespace::State::FORWARD) {
-                intake_->moveToState(SpinnerNamespace::State::BACKWARD, 300);
-                hooks_->moveToState(SpinnerNamespace::State::BACKWARD, 300);
+                intake_->moveToState(SpinnerNamespace::State::BACKWARD);
+                hooks_->moveToState(SpinnerNamespace::State::BACKWARD);
+                moveToState(ConveyorNamespace::State::REVERSE, 150);
                 reverse_ = false;
                 return;
             }
@@ -82,22 +85,16 @@ class Conveyor : public subsystem<ConveyorNamespace::State> {
             intake_->moveToState(state); // Move forward normally
             hooks_->moveToState(state); // Move forward normally
         }
-    private:
-        SpinnerNamespace::Spinner* intake_;
-        SpinnerNamespace::Spinner* hooks_;
-        std::shared_ptr<pros::Optical> optical_sensor_ = nullptr;
-        std::shared_ptr<pros::Distance> distance_ = nullptr;
-        Color init_color_;
-        bool enable_color_sensor_ = true;
-        bool reverse_ = false;
-
-        // Task that runs based on the current state
-        void runTask() override final {
-            if (enable_color_sensor_ and detectWrongRing()) reverse_ = true;
+        void runTask() {
+            if (hooks_->getStuckedStatus() && hooks_->getCurrentState() == SpinnerNamespace::State::FORWARD) {
+                hooks_->moveToState(SpinnerNamespace::State::BACKWARD);
+                return;
+            }            
+            if (enable_color_sensor_ && detectWrongRing()) reverse_ = true;
 
             // Handle timed states
             if (timer.isDone() and timer.getTimeSet() > 0) {
-                moveToState(ConveyorNamespace::State::STOP);
+                moveToState(ConveyorNamespace::State::FORWARDS);
                 timer.set(0);
             }
 
@@ -111,5 +108,14 @@ class Conveyor : public subsystem<ConveyorNamespace::State> {
                     break;
             }
         }
-};
+    private:
+        SpinnerNamespace::Spinner* intake_;
+        SpinnerNamespace::Spinner* hooks_;
+        std::shared_ptr<pros::Optical> optical_sensor_ = nullptr;
+        std::shared_ptr<pros::Distance> distance_ = nullptr;
+        Color init_color_;
+        bool enable_color_sensor_ = true;
+        bool reverse_ = false;
+    
+    };
 } // namespace ConveyorNamespace
