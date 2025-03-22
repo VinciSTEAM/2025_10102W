@@ -2,7 +2,7 @@
 
 // Arm
 constexpr float MAX_DEGREES = 30000.0f; 
-constexpr float WAIT_DEGREES = 3000.0f; // 30 degrees
+constexpr float WAIT_DEGREES = 3350.0f; // 30 degrees
 constexpr float DOWN_DEGREES = 1500.0f; // 15 degrees
 constexpr float SCORE_DEGRESS = 17000.0f; 
 constexpr float DISCORE_DEGRESS = 13000.0f; 

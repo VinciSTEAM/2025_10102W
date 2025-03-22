@@ -1,8 +1,11 @@
 #pragma once
 
+#include "conveyor.hpp"
 #include "pros/motor_group.hpp"
 #include "lemlib/api.hpp"
+#include "pros/rtos.hpp"
 #include "subsystem.hpp"
+#include "spinner.hpp"
 
 namespace ArmNamespace {
 
@@ -91,11 +94,11 @@ class Arm : public subsystem<State, Arm> {
 
             if (button_2 && currState == State::DOWN) {
                 motor_->set_brake_mode(pros::MotorBrake::hold);
-                moveToState(State::WAIT);
+                moveToState(State::WAIT); 
             } else if (button_2 && currState == State::WAIT) {
                 motor_->set_brake_mode(pros::MotorBrake::hold);
                 moveToState(State::SCORE_UP);
-            } else if (currState == State::SCORE_UP && fabs(DISCORE_DEGRESS - rotation_->get_position()) < 200) {
+            } else if (button_2 && currState == State::SCORE_UP) {
                 motor_->set_brake_mode(pros::MotorBrake::hold);
                 moveToState(State::DOWN);
             }
@@ -104,7 +107,7 @@ class Arm : public subsystem<State, Arm> {
                 motor_->set_brake_mode(pros::MotorBrake::hold);
                 moveToState(State::DISCORE_UP);
             }
- 
+            pros::delay(100);
         }
 
         void changeVelocity(float ratio) { ratio_ = ratio; }
@@ -127,6 +130,9 @@ class Arm : public subsystem<State, Arm> {
         }
       
         void resetRotation(float rotation) { rotation_->set_position(rotation); }
+        bool isTaskDone(double threshold) {
+            return fabs(arm_state_to_degree(currState) - rotation_->get_position()) < threshold;
+         }
         
         void runTask() {
             if (currState == State::DOWN) motor_->set_brake_mode(pros::MotorBrake::coast);
@@ -165,13 +171,13 @@ class Arm : public subsystem<State, Arm> {
                     }
                     break;
                 case State::SCORE_UP:
-                    move_arm_with_pid_with_timeout(State::SCORE_UP, 500, 100, false);
-                    // if (float angularError = (SCORE_DEGRESS - rotation_->get_position()) / 100.0;
-                    //     fabs(angularError) > 2) {
-                    //     motor_->move(armAngularPID.update(angularError));
-                    // } else {
-                    //     motor_->move(0);
-                    // }
+                    // move_arm_with_pid_with_timeout(State::SCORE_UP, 500, 100, false);
+                    if (float angularError = (SCORE_DEGRESS - rotation_->get_position()) / 100.0;
+                        fabs(angularError) > 2) {
+                        motor_->move(armAngularPID.update(angularError));
+                    } else {
+                        motor_->move(0);
+                    }
                     break;
                 case State::IDLE: motor_->move(0); break;
             }
